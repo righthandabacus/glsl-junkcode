@@ -1,0 +1,41 @@
+CFLAGS=-DGL_GLEXT_PROTOTYPES -Wextra -std=c99
+LDFLAGS=
+LDLIBS=-lm -framework OpenGL -framework GLUT
+CC=clang
+CPP=clang++
+
+
+all : process-array fix-array
+
+process-array : process-array.o reusable.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+fix-array : fix-array.o reusable.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test3: test3.o glsl_utils.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test2: test2.o glsl_utils.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test: test.o glsl_utils.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+%: %.o glsl_utils.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+clean :
+	rm process-array
+	rm fix-array
+	rm process-array.o
+	rm fix-array.o
+	rm reusable.o
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+%.o: %.cc
+	$(CPP) -c -o $@ $< $(CFLAGS)
+
+.PHONY: all clean
