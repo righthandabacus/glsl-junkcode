@@ -6,12 +6,9 @@ CC=gcc
 CPP=g++
 
 
-all : check_gl check_texsize linear_mapping
+all : check_gl check_texsize linear_mapping max_reduce
 
-process-array : process-array.o reusable.o
-	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-fix-array: fix-array.o reusable.o
+max_reduce: max_reduce.o glsl_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 linear_mapping: linear_mapping.o glsl_utils.o
@@ -30,9 +27,11 @@ clean :
 	rm check_gl
 	rm check_texsize
 	rm linear_mapping
+	rm max_reduce
 	rm check_gl.o
 	rm check_texsize.o
 	rm linear_mapping.o
+	rm max_reduce.o
 	rm glsl_utils.o
 
 %.o: %.c

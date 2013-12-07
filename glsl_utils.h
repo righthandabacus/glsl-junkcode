@@ -44,6 +44,7 @@ int frameBufferStatus();
 int checkGLStatus();
 GLuint initGlut(int* argcp, char** argv);
 GLuint setupFBO(GLsizei width, GLsizei height, float**data, const unsigned count, GLuint*fbo, GLuint*tex);
+int setupTexture(GLsizei width, GLsizei height, GLuint tex);
 void cleanupFBO(GLuint* fbo, GLuint* tex, const unsigned count);
 void render(GLsizei width, GLsizei height);
 

@@ -272,25 +272,12 @@ GLuint setupFBO(GLsizei width, GLsizei height, float**data, const unsigned count
 	// create new texture(s)
 	glGenTextures(count, tex);
 	for (unsigned i=0; i<count; ++i) {
-		// bind, turn off filtering, set wrap mode for texture
-		glBindTexture(texTarget, tex[i]);
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // FBO safe
-		glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		// allocate graphics memory
-		glTexImage2D(texTarget, /* texture target, e.g. GL_TEXTURE_2D */
-					 0,         /* 0=no mipmap levels for this texture */
-					 intFmt,    /* internal format */
-					 width,     /* texture widht */
-					 height,    /* texture height */
-					 0,         /* 0=no borders for texture */
-					 texFmt,    /* texture format: number of channels */
-					 GL_FLOAT,  /* tell CPU that the data to pass into the texture is float */
-					 NULL);     /* NULL pointer: no data to set into texture right now */
-		if (checkGLStatus()) goto EXIT;
+		// setup texture using subroutine
+		if (setupTexture(width, height, tex[i])) goto EXIT;
 		// transfer data to texture
-		glTexSubImage2D(texTarget, 0, 0, 0, width, height, texFmt, GL_FLOAT, data[i]);
+		if (data[i]) {
+			glTexSubImage2D(texTarget, 0, 0, 0, width, height, texFmt, GL_FLOAT, data[i]);
+		};
 	};
 	
 	// set texenv to replace instead of modulate
@@ -305,6 +292,27 @@ GLuint setupFBO(GLsizei width, GLsizei height, float**data, const unsigned count
 EXIT:
 	fprintf(stderr, "Failed making textures");
 	return 0;
+}
+
+int setupTexture(GLsizei width, GLsizei height, GLuint tex)
+{
+	// bind, turn off filtering, set wrap mode for texture
+	glBindTexture(texTarget, tex);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // FBO safe
+	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	// allocate graphics memory
+	glTexImage2D(texTarget, /* texture target, e.g. GL_TEXTURE_2D */
+				 0,         /* 0=no mipmap levels for this texture */
+				 intFmt,    /* internal format */
+				 width,     /* texture widht */
+				 height,    /* texture height */
+				 0,         /* 0=no borders for texture */
+				 texFmt,    /* texture format: number of channels */
+				 GL_FLOAT,  /* tell CPU that the data to pass into the texture is float */
+				 NULL);     /* NULL pointer: no data to set into texture right now */
+	return checkGLStatus();
 }
 
 /** Clean up the framebuffer

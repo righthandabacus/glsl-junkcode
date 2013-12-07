@@ -8,3 +8,5 @@ void main(void) {
     float x = texture2DRect(textureX, gl_TexCoord[0].st).x;
     gl_FragColor.x = x + alpha*y;
 }
+
+/* vim:set syntax=glsl sw=4 ts=4 bs=indent: */
