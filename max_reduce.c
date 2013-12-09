@@ -20,10 +20,9 @@ int main(int argc, char **argv) {
     /* application variables */
     float*data;                     // data
     GLuint fb, prog;                // FBO handle and program handle
-    GLuint tex[3];                  // textures handle
+    GLuint tex[2];                  // textures handle
     int writePos=0;                 // ping-pong variable
     GLint texParam, deltaParam;     // connection to params in GLSL
-    int texSize;
 
     /* parse command line ***********/
     if (argc < 2) {
@@ -43,46 +42,50 @@ int main(int argc, char **argv) {
         data[i] = rand() / ((float)rand()+1.0); // tons of floats
     }
 
+    /* print out data ***************/
+    float expected = data[0];
+    for (int i=0; i<size*size; i++) {
+        printf("%.3f",data[i]);
+        printf(((1+i) % size)?"\t":"\n");
+        if (data[i] > expected) expected = data[i];
+    };
+
     /* initialize system ************/
     GLuint hwnd = initGlut(&argc, argv);
     // First two textures for ping-pong, third texture for input
-    float* dataWrap[] = {NULL, NULL, data};
-    GLuint fbo = setupFBO(size, size, dataWrap, 3, &fb, tex); // input texture
+    float* dataWrap[] = {NULL, data};
+    GLuint fbo = setupFBO(size, size, dataWrap, 2, &fb, tex); // input texture
     assert(fbo == fb);
     prog = createProgram(NULL, "max_reduce.f.glsl");
-
-    /* perform calculation part 1 ****/
     texParam   = glGetUniformLocation(prog, "texture");
     deltaParam = glGetUniformLocation(prog, "delta");
     glUseProgram(prog);
-    glUniform1f(deltaParam, size/2);    // use size/2 as uniform float delta
-    glActiveTexture(GL_TEXTURE1);       // select texture1
-    glBindTexture(texTarget, tex[2]);   // apply data into texture 1
-    glUniform1i(texParam, 1);           // use texture 1 as uniform sampler texture
-    glFinish();                         // flush GPU for more accurate timing
 
-    glDrawBuffer(ATTACHMENTPOINT[writePos]);    // set render destination
-    render(size/2, size/2);             // run GLSL program
+    /* perform calculation in loop ***/
+    int outSize = size >> 1;
+    while (outSize) {
+        glUniform1f(deltaParam, outSize);           // bind use outSize as offset, outSize >= 1
+        glActiveTexture(GL_TEXTURE1);               // select texture1
+        glBindTexture(texTarget, tex[1-writePos]);  // apply data into texture 1
+        glUniform1i(texParam, 1);                   // use texture 1 as uniform sampler texture
+        glDrawBuffer(ATTACHMENTPOINT[writePos]);    // set render destination
+        render(outSize, outSize);                   // run GLSL program
+        outSize >>= 1;                              // Set output size to half for next iteration
+        writePos = 1-writePos;                      // swap the role of two textures for next iteration
+    };
     glFinish();
 
-    glReadBuffer(ATTACHMENTPOINT[writePos]);
-    float* result = (float*)malloc(sizeof(float)*size*size/4);    // malloc and copy result from GPU
-    glReadPixels(0, 0, size/2, size/2, texFmt, GL_FLOAT, result);
-    for (int i=0; i<size*size; i++) {
-        printf("%f",data[i]);
-        printf(((1+i) % size)?"\t":"\n");
-    };
-    printf("output\n");
-    for (int i=0; i<size*size/4; i++) {
-        printf("%f",result[i]);
-        printf(((1+i) % (size/2))?"\t":"\n");
-    };
-    // and clean up
+    glReadBuffer(ATTACHMENTPOINT[1-writePos]);
+    float result;
+    glReadPixels(0, 0, 1, 1, texFmt, GL_FLOAT, &result);
+    printf("Maximum  = %f\n", result);
+    printf("Expected = %f\n", expected);
+
+    /* clean up **********************/
     glDeleteProgram(prog);
-    cleanupFBO(&fb, tex, 3);
+    cleanupFBO(&fb, tex, 2);
     glutDestroyWindow (hwnd);
     free(data);
-    free(result);
     // exit
     return 0;
 }
