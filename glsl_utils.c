@@ -5,12 +5,18 @@
  */
 
 #include "glsl_utils.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 // Platform dependent formats
 GLenum texTarget = GL_TEXTURE_RECTANGLE_ARB;	// GL_TEXTURE_2D
 GLint intFmt = GL_FLOAT_R32_NV; // GL_RGBA32F_ARB;
 GLint texFmt = GL_LUMINANCE;    // GL_RGBA;
 unsigned floatPerTexel = 1;     // 4;
+unsigned usePBO = 0;			// use pixel buffer objects for asynchronus transfer between CPU & GPU
+GLuint _pbo[10];				// PBO handle
 
 // Variables for convenience
 const int ATTACHMENTPOINT[] = {
@@ -242,6 +248,9 @@ GLuint initGlut(int* argcp, char** argv)
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glFlush();
+	if (usePBO) {
+		glGenBuffers(10, _pbo);
+	};
 	return window;
 }
 
@@ -276,7 +285,17 @@ GLuint setupFBO(GLsizei width, GLsizei height, float**data, const unsigned count
 		if (setupTexture(width, height, tex[i])) goto EXIT;
 		// transfer data to texture
 		if (data[i]) {
-			glTexSubImage2D(texTarget, 0, 0, 0, width, height, texFmt, GL_FLOAT, data[i]);
+			if (usePBO) {
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, _pbo[i]);
+				glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, width*height*sizeof(float), NULL, GL_STREAM_DRAW);
+				void* ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+				memcpy(ioMem, data[i], width*height*sizeof(float));
+				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+				glTexSubImage2D(texTarget, 0, 0, 0, width, height, texFmt, GL_FLOAT, (void*)0);
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+			} else {
+				glTexSubImage2D(texTarget, 0, 0, 0, width, height, texFmt, GL_FLOAT, data[i]);
+			}
 		};
 	};
 	
@@ -315,6 +334,28 @@ int setupTexture(GLsizei width, GLsizei height, GLuint tex)
 	return checkGLStatus();
 }
 
+/** Read FBO into local memory
+ *  @param attachpoint The attachment point to read
+ *  @param width Width of the FBO
+ *  @param height Height of the FBO
+ *  @param data The destination to write the FBO data
+ */
+void readFBO(GLenum attachpoint, GLsizei width, GLsizei height, float*data)
+{
+	glReadBuffer(attachpoint);
+	if (usePBO) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, _pbo[9]);
+		glBufferData(GL_PIXEL_PACK_BUFFER_ARB,width*height*sizeof(float), NULL, GL_STREAM_READ);
+		glReadPixels(0, 0, width, height, texFmt, GL_FLOAT, (void*)0);
+		void* ioMem = glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		memcpy(data, ioMem, width*height*sizeof(float));
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0); 
+	} else {
+		glReadPixels(0, 0, width, height, texFmt, GL_FLOAT, data);
+	}
+}
+
 /** Clean up the framebuffer
  *  @param fbo pointer to the handle of the framebuffer object
  *  @param tex array of pointer to the handle of the texture object
@@ -324,6 +365,9 @@ void cleanupFBO(GLuint* fbo, GLuint* tex, const unsigned count)
 {
 	glDeleteFramebuffersEXT(1, fbo);
 	glDeleteTextures(count, tex);
+	if (usePBO) {
+		glDeleteBuffers(10, _pbo);
+	};
 }
 
 

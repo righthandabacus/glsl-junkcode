@@ -13,9 +13,6 @@ extern "C" {
 	#include <GL/glut.h>
 	#include <GL/gl.h>
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 
 
 #ifdef __APPLE__
@@ -44,6 +41,7 @@ int frameBufferStatus();
 int checkGLStatus();
 GLuint initGlut(int* argcp, char** argv);
 GLuint setupFBO(GLsizei width, GLsizei height, float**data, const unsigned count, GLuint*fbo, GLuint*tex);
+void readFBO(GLenum attachpoint, GLsizei width, GLsizei height, float*data);
 int setupTexture(GLsizei width, GLsizei height, GLuint tex);
 void cleanupFBO(GLuint* fbo, GLuint* tex, const unsigned count);
 void render(GLsizei width, GLsizei height);

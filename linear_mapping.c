@@ -6,6 +6,7 @@
  * This code computes y = alpha*y + x over vectors x and y for a number of loops
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -100,8 +101,7 @@ int main(int argc, char **argv) {
     // verify data
     if (!frameBufferStatus() && !checkGLStatus()) {
         float* result = (float*)malloc(sizeof(float)*N);    // malloc and copy result from GPU
-        glReadBuffer(ATTACHMENTPOINT[1-writePos]);
-        glReadPixels(0, 0, texSize, texSize, texFmt, GL_FLOAT, result);
+        readFBO(ATTACHMENTPOINT[1-writePos], texSize, texSize, result);
         if (compareResults)  {
             // verify with CPU
             start=clock();

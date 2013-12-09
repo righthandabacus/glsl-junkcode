@@ -7,11 +7,14 @@
  * them using GPGPU parallelization.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
 #include "glsl_utils.h"
+
+extern int usePBO;
 
 int main(int argc, char **argv) {
     /* command line parameters */
@@ -23,6 +26,8 @@ int main(int argc, char **argv) {
     GLuint tex[2];                  // textures handle
     int writePos=0;                 // ping-pong variable
     GLint texParam, deltaParam;     // connection to params in GLSL
+
+    usePBO = 1;
 
     /* parse command line ***********/
     if (argc < 2) {
@@ -75,9 +80,8 @@ int main(int argc, char **argv) {
     };
     glFinish();
 
-    glReadBuffer(ATTACHMENTPOINT[1-writePos]);
     float result;
-    glReadPixels(0, 0, 1, 1, texFmt, GL_FLOAT, &result);
+    readFBO(ATTACHMENTPOINT[1-writePos], 1, 1, &result);
     printf("Maximum  = %f\n", result);
     printf("Expected = %f\n", expected);
 
