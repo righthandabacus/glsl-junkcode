@@ -1,36 +1,38 @@
 CFLAGS=-DGL_GLEXT_PROTOTYPES -Wextra -std=c99
+OBJS=
 LDFLAGS=
 LDLIBS=-lm -framework OpenGL -framework GLUT
 CC=clang
 CPP=clang++
 
 
-all : process-array fix-array
+all : check_gl check_texsize linear_mapping max_reduce
 
-process-array : process-array.o reusable.o
+max_reduce: max_reduce.o glsl_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-fix-array : fix-array.o reusable.o
+linear_mapping: linear_mapping.o glsl_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-test3: test3.o glsl_utils.o
+check_texsize: check_texsize.o glsl_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-test2: test2.o glsl_utils.o
+check_gl: check_gl.o glsl_utils.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-test: test.o glsl_utils.o
-	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-%: %.o glsl_utils.o
+%: %.o $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean :
-	rm process-array
-	rm fix-array
-	rm process-array.o
-	rm fix-array.o
-	rm reusable.o
+	rm check_gl
+	rm check_texsize
+	rm linear_mapping
+	rm max_reduce
+	rm check_gl.o
+	rm check_texsize.o
+	rm linear_mapping.o
+	rm max_reduce.o
+	rm glsl_utils.o
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
